@@ -6,7 +6,7 @@ var BASE="https://justinahiggins614-cmyk.github.io/";
 var SITES=[
 ["signature-math/","1 Signature Math"],["jah-calculator/","2 Signature Universal Paradox Immune Calculator"],
 ["jah-dictionary/","3 The Signature Dictionary"],["jah-wiki/","4 JAH Wiki"],
-["jah-n-wiki-leaks/","5 JAH-N Wiki"],["signature-llama/","6 Signature Llama"],
+["jah-n-wiki-leaks/","5 JAH-N Wiki Leaks"],["signature-llama/","6 Signature Llama"],
 ["jah-ai-models/","7 The Signature AI Phone Book"],["cyber-patent-catalog/","8 Globally Rejustered Patent Catalog"],
 ["signature-one-archive/specs.html","9 Signature Spec Catalog Pending Patents"],
 ["jah-computer-systems/","10 The Signature PC System Depository"],["signature-books/","11 The Signature Book Depository"],
