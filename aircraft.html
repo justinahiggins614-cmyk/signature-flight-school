@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Aircraft — The Signature Flight School</title>
+<meta name="description" content="Pick your plane or jet: 12 aircraft from student trainers to ace rocket planes, each with specs and skill level.">
+<link rel="canonical" href="https://justinahiggins614-cmyk.github.io/signature-flight-school/aircraft.html">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="tabs" id="tabbar" aria-label="Flight School sections">
+  <a href="index.html">🏠 Main</a><a href="aircraft.html">✈️ Aircraft</a><a href="sim.html">🛩️ Flight Sim</a><a href="paths.html">🗺️ Flight Paths</a>
+  <span class="pilotchip" id="pilotchip"></span>
+</nav>
+<div class="hero"><div class="wrap">
+  <div class="plane">✈️</div>
+  <h1><span class="gold">Pick Your</span> Aircraft</h1>
+  <p class="tag">Twelve planes and jets, from gentle trainers to rocket planes. Start at <b>Student</b> and earn your way to <b>Ace</b>.</p>
+</div></div>
+<div class="wrap">
+<div class="sec">
+  <h2>🛩️ The Fleet</h2>
+  <p><label class="fl" for="skillf">Filter by skill level</label>
+  <select id="skillf" aria-label="Filter by skill level">
+    <option value="">All levels</option><option>Student</option><option>Intermediate</option><option>Advanced</option><option>Ace</option>
+  </select></p>
+  <div class="grid" id="fleet"></div>
+</div>
+<div id="jahnet"></div>
+<footer>The Signature Flight School · Made by Justin Addam Higgins</footer>
+</div>
+<script src="js/shared.js"></script>
+<script>
+SFNAV();SFTABS("aircraft");SFchip();
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+var FLEET=[];
+function skillBadge(s){var c=s==="Student"?"gr":s==="Intermediate"?"bl":s==="Advanced"?"gold":"rd";
+  return '<span class="badge '+c+'">'+s+'</span>';}
+function render(f){
+  var el=document.getElementById("fleet");
+  el.innerHTML=f.map(function(a){
+    var read=(a.name+". "+a.type+". Skill level "+a.skill+". Top speed "+a.speed+" kilometers per hour. Range "+a.range+" kilometers. "+a.desc+" Best for: "+a.best).replace(/"/g,"");
+    return '<div class="card"><h3>✈️ '+esc(a.name)+'</h3>'+
+    '<p>'+skillBadge(a.skill)+' <span class="badge">'+esc(a.type)+'</span></p>'+
+    '<p class="meta">💨 '+a.speed+' km/h · 🗺️ '+a.range+' km range · 👥 crew '+a.crew+'<br>'+esc(a.desc)+
+    '<br><i>Best for:</i> '+esc(a.best)+'<br><i>'+esc(a.style)+'</i></p>'+
+    '<button class="gold" data-fly="'+a.id+'">🛩️ Fly this in the sim</button> '+
+    '<button class="readbtn" data-read="'+esc(read)+'" onclick="sfReadCard(this)">🔊 Read</button></div>';
+  }).join("");
+  el.querySelectorAll("[data-fly]").forEach(function(b){b.onclick=function(){location.href="sim.html?craft="+b.getAttribute("data-fly");};});
+}
+fetch("data/aircraft.json").then(function(r){return r.json();}).then(function(d){
+  FLEET=d;
+  document.getElementById("skillf").onchange=function(){var v=this.value;
+    render(v?FLEET.filter(function(a){return a.skill===v;}):FLEET);};
+  render(FLEET);
+}).catch(function(){document.getElementById("fleet").innerHTML="<p>Could not load the fleet.</p>";});
+</script>
+</body>
+</html>

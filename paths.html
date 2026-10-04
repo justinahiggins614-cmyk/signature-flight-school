@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flight Paths — The Signature Flight School</title>
+<meta name="description" content="A growing catalog of simulated flight paths over Earth — watch the AI fly any path, then fly it yourself.">
+<link rel="canonical" href="https://justinahiggins614-cmyk.github.io/signature-flight-school/paths.html">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="tabs" id="tabbar" aria-label="Flight School sections">
+  <a href="index.html">🏠 Main</a><a href="aircraft.html">✈️ Aircraft</a><a href="sim.html">🛩️ Flight Sim</a><a href="paths.html">🗺️ Flight Paths</a>
+  <span class="pilotchip" id="pilotchip"></span>
+</nav>
+<div class="hero"><div class="wrap">
+  <div class="plane">🗺️</div>
+  <h1><span class="gold">Flight Path</span> Archive</h1>
+  <p class="tag">Simulated flight paths over Earth, marching to <b>1,000,000</b>. Watch Captain Siggy fly any of them — then take the stick yourself.</p>
+</div></div>
+<div class="wrap">
+<div id="bestbox"></div>
+<div class="sec">
+  <h2>🗺️ Every Flight Path, A–Z</h2>
+  <p class="statusline" id="pathcount"></p>
+  <div id="az"></div>
+</div>
+<div id="jahnet"></div>
+<footer>The Signature Flight School · Made by Justin Addam Higgins</footer>
+</div>
+<script src="js/shared.js"></script>
+<script>
+SFNAV();SFTABS("paths");SFchip();
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+var ACRAFT={};
+fetch("data/aircraft.json").then(function(r){return r.json();}).then(function(a){
+  a.forEach(function(x){ACRAFT[x.id]=x.name;});loadPaths();});
+function planText(p){
+  return "FLIGHT PLAN — "+p.name+" ("+p.id+")\nRegion: "+p.region+"\nDistance: "+p.distance_km+" km\n"+
+  "Skill level: "+p.skill+"\nRecommended aircraft: "+(ACRAFT[p.craft]||p.craft)+"\nHighlights: "+p.highlights+
+  "\nWaypoints (x east, z north, alt m):\n"+p.waypoints.map(function(w,i){return "  "+(i+1)+". "+w[0]+", "+w[1]+", "+w[2]+"m";}).join("\n")+
+  "\n— The Signature Flight School";
+}
+function cardHTML(p,isBest){
+  var read=(p.name+". "+p.region+". "+p.distance_km+" kilometers. Skill level "+p.skill+". "+p.highlights).replace(/"/g,"");
+  return '<div class="card"><h3>🛫 '+esc(p.name)+'</h3>'+
+  '<p class="meta">📍 '+esc(p.region)+' · 📏 '+p.distance_km+' km<br>'+
+  '<span class="badge">'+p.skill+'</span> <span class="badge bl">'+esc(ACRAFT[p.craft]||p.craft)+'</span><br>'+
+  '<i>'+esc(p.highlights)+'</i><br><span style="font-size:.8em">'+p.id+'</span></p>'+
+  '<button class="gold" data-demo="'+p.id+'">🤖 Watch the AI fly it</button> '+
+  '<button data-copy="'+p.id+'">📋 Copy plan</button> '+
+  '<button class="ghost" data-dl="'+p.id+'">⬇ Download</button> '+
+  '<button class="readbtn" data-read="'+esc(read)+'" onclick="sfReadCard(this)">🔊 Read</button>'+
+  '<div style="margin-top:8px"><canvas width="240" height="120" data-map="'+p.id+'" style="width:100%;border-radius:8px;border:1px solid var(--line)"></canvas></div></div>';
+}
+function drawMap(cv,p){
+  var ctx=cv.getContext("2d");ctx.fillStyle="#0a1a33";ctx.fillRect(0,0,240,120);
+  var xs=p.waypoints.map(function(w){return w[0];}),zs=p.waypoints.map(function(w){return w[1];});
+  var x0=Math.min.apply(0,xs)-200,x1=Math.max.apply(0,xs)+200,
+      z0=Math.min.apply(0,zs)-200,z1=Math.max.apply(0,zs)+200;
+  function X(x){return 12+(x-x0)/(x1-x0)*216;} function Z(z){return 12+(z-z0)/(z1-z0)*96;}
+  ctx.strokeStyle="#4da6ff";ctx.lineWidth=2;ctx.beginPath();
+  p.waypoints.forEach(function(w,i){if(i)ctx.lineTo(X(w[0]),Z(w[1]));else ctx.moveTo(X(w[0]),Z(w[1]));});
+  ctx.stroke();
+  p.waypoints.forEach(function(w,i){ctx.fillStyle=i?"#37d67a":"#d4a017";
+    ctx.beginPath();ctx.arc(X(w[0]),Z(w[1]),4,0,7);ctx.fill();});
+  ctx.fillStyle="#9db4d8";ctx.font="10px Arial";ctx.fillText("plotted route",12,112);
+}
+function wireCards(root,paths){
+  root.querySelectorAll("[data-demo]").forEach(function(b){b.onclick=function(){
+    location.href="sim.html?demo="+b.getAttribute("data-demo");};});
+  root.querySelectorAll("[data-copy]").forEach(function(b){b.onclick=function(){
+    var p=byId(b.getAttribute("data-copy"));SFcopy(planText(p),b);} ;});
+  root.querySelectorAll("[data-dl]").forEach(function(b){b.onclick=function(){
+    var p=byId(b.getAttribute("data-dl"));SFdownload(p.id+"-flight-plan.txt",planText(p));} ;});
+  root.querySelectorAll("[data-map]").forEach(function(cv){
+    var p=byId(cv.getAttribute("data-map"));if(p)drawMap(cv,p);});
+}
+var ALLP=[];
+function byId(id){for(var i=0;i<ALLP.length;i++)if(ALLP[i].id===id)return ALLP[i];return null;}
+function loadPaths(){
+  fetch("data/paths.json").then(function(r){return r.json();}).then(function(d){
+    ALLP=d.paths;
+    var best=null;ALLP.forEach(function(p){if(p.id===d.best_id)best=p;});
+    document.getElementById("pathcount").textContent=ALLP.length+" catalogued flight paths — "+d.count_note;
+    var bb=document.getElementById("bestbox");
+    bb.innerHTML='<div class="best"><h2>★ Best of the Best — Captain Siggy\'s Pick</h2>'+
+      '<details open><summary style="cursor:pointer;font-weight:bold;font-size:1.1em">'+esc(best.name)+'</summary>'+
+      '<div style="margin-top:10px"><p><i>'+esc(best.best_reason)+'</i></p>'+cardHTML(best,true)+
+      '<p class="meta" style="margin-top:10px"><b>What it does:</b> a complete simulated cross-country route with plotted waypoints, altitude profile, and a recommended aircraft.<br>'+
+      '<b>Implications:</b> fly it in the sim to practice everything — takeoff, navigation, turns, landing — in one flight.<br>'+
+      '<b>Stats:</b> '+best.distance_km+' km · '+best.waypoints.length+' waypoints · skill '+best.skill+'.</p></div></details></div>';
+    wireCards(bb,[best]);
+    /* A-Z */
+    var groups={};ALLP.forEach(function(p){(groups[p.letter]=groups[p.letter]||[]).push(p);});
+    var az=document.getElementById("az");
+    az.innerHTML=Object.keys(groups).sort().map(function(L){
+      return '<details class="az"><summary>'+L+' — '+groups[L].length+' paths</summary><div class="azbody"><div class="grid">'+
+        groups[L].map(function(p){return cardHTML(p,false);}).join("")+'</div></div></details>';
+    }).join("");
+    wireCards(az,ALLP);
+  }).catch(function(){document.getElementById("az").innerHTML="<p>Could not load flight paths.</p>";});
+}
+</script>
+</body>
+</html>

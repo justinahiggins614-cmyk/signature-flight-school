@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flight Sim — The Signature Flight School</title>
+<meta name="description" content="Fly the simulator with AI pal Captain Siggy coaching you — or fly solo. Take off, turn, land, and log hours.">
+<link rel="canonical" href="https://justinahiggins614-cmyk.github.io/signature-flight-school/sim.html">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="tabs" id="tabbar" aria-label="Flight School sections">
+  <a href="index.html">🏠 Main</a><a href="aircraft.html">✈️ Aircraft</a><a href="sim.html">🛩️ Flight Sim</a><a href="paths.html">🗺️ Flight Paths</a>
+  <span class="pilotchip" id="pilotchip"></span>
+</nav>
+<div class="hero"><div class="wrap">
+  <div class="plane">🛩️</div>
+  <h1><span class="gold">Flight</span> Simulator</h1>
+  <p class="tag" id="simtag">Learn with <b>Captain Siggy</b>, your AI pal instructor — or fly solo when you're ready.</p>
+</div></div>
+<div class="wrap">
+
+<div class="sec" id="demobox" style="display:none">
+  <h2>🤖 AI Demo Flight</h2>
+  <p id="demoinfo" class="statusline"></p>
+</div>
+
+<div class="sec">
+  <h2>🤖 Captain Siggy's Lessons <button class="readbtn" onclick="SFRead('Captain Siggy says: flying is easy when you learn it step by step. Start with lesson one and work your way down.')">🔊 Read intro</button></h2>
+  <div id="lessons"></div>
+</div>
+
+<div class="sec">
+  <h2>🕹️ The Simulator</h2>
+  <p><label class="fl" for="craftsel">Aircraft</label>
+  <select id="craftsel" aria-label="Choose aircraft"></select>
+  <label style="margin-left:12px"><input type="checkbox" id="solo"> <b>Fly solo</b> (no AI helper)</label></p>
+  <div id="simwrap">
+    <canvas id="simcanvas" width="960" height="540" aria-label="Flight simulator view"></canvas>
+    <div id="simhud">
+      <span class="hudbox">💨 <b id="h_spd">0</b> m/s</span>
+      <span class="hudbox">⛰️ <b id="h_alt">0</b> m</span>
+      <span class="hudbox">🧭 <b id="h_hdg">0</b>°</span>
+      <span class="hudbox">🎚️ <b id="h_thr">0</b>%</span>
+      <span class="hudbox">⏱️ <b id="h_time">0:00</b></span>
+    </div>
+    <div id="demobanner">🤖 AI DEMO — Captain Siggy is flying</div>
+    <div id="palcallout" role="status"></div>
+  </div>
+  <div class="stickrow">
+    <button class="stickbtn" id="stL">◀ LEFT</button>
+    <button class="stickbtn" id="stU">▲ CLIMB</button>
+    <button class="stickbtn" id="stD">▼ DESCEND</button>
+    <button class="stickbtn" id="stR">RIGHT ▶</button>
+  </div>
+  <p class="statusline">Stick: <span class="kbd">◀</span><span class="kbd">▶</span> bank · <span class="kbd">▲</span> climb · <span class="kbd">▼</span> descend · Keyboard: arrows/WASD, <span class="kbd">Shift</span>/<span class="kbd">Ctrl</span> throttle</p>
+  <div id="btnpad"></div>
+  <p style="margin-top:10px">
+    <button class="grn" id="endflight">🛬 End flight &amp; log hours</button>
+    <button class="warn" id="resetflight">↺ Reset (11)</button>
+    <button class="ghost" id="readhud">🔊 Read instruments</button>
+  </p>
+  <p class="statusline" id="flightmsg">Throttle up and gently pull back to take off!</p>
+</div>
+
+<div id="jahnet"></div>
+<footer>The Signature Flight School · Made by Justin Addam Higgins</footer>
+</div>
+<script src="js/shared.js"></script>
+<script src="js/sim.js"></script>
+<script>
+SFNAV();SFTABS("sim");SFchip();
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+var qs=function(k){var m=location.search.match(new RegExp("[?&]"+k+"=([^&]+)"));return m?decodeURIComponent(m[1]):null;};
+/* ---------- lessons ---------- */
+var LESSONS=[
+ {t:"Lesson 1 · Meet the controls",b:"The <b>stick</b> flies the plane: push <b>UP</b> to climb, <b>DOWN</b> to descend, <b>LEFT</b> and <b>RIGHT</b> to bank into turns. On your keyboard that's the arrow keys (or W A S D).<br><br><b>Buttons 1–11</b> are your cockpit:<br>1 = throttle up · 2 = throttle down · 3 = flaps · 4 = landing gear · 5 = brakes · 6 = AI helper on/off · 7 = map · 8 = smoke trail · 9 = ask Captain Siggy · 10 = pause · 11 = reset.<br><br>Keyboard shortcuts: <span class='kbd'>Shift</span> throttle up, <span class='kbd'>Ctrl</span> throttle down, <span class='kbd'>F</span> flaps, <span class='kbd'>G</span> gear, <span class='kbd'>B</span> brakes, <span class='kbd'>M</span> map, <span class='kbd'>P</span> pause.",
+  r:"Lesson 1: meet the controls. The stick flies the plane. Up climbs, down descends, left and right bank into turns. Buttons 1 and 2 are the throttle. Button 4 is the landing gear. Button 11 resets your flight."},
+ {t:"Lesson 2 · Takeoff",b:"1. Push throttle to full — button <b>1</b> a few times (or hold <span class='kbd'>Shift</span>).<br>2. Steer straight down the runway with tiny LEFT/RIGHT taps.<br>3. When you're going fast, gently push <b>UP</b> on the stick. Don't yank it!<br>4. Climb away at a gentle angle. You're flying! 🎉",
+  r:"Lesson 2: takeoff. Full throttle, steer straight, then gently pull up on the stick when you're fast. Don't yank it."},
+ {t:"Lesson 3 · Level flight and turns",b:"Ease the stick back to center once you're climbing nicely — the plane will settle. To turn, bank <b>LEFT</b> or <b>RIGHT</b> a little and hold it; the plane turns by itself. Small banks = gentle turns. Big banks = fast turns but you lose lift, so add a touch of UP. To fly straight again, roll back to level.",
+  r:"Lesson 3: level flight and turns. Bank left or right to turn. Small banks turn gently. Roll back to level to fly straight."},
+ {t:"Lesson 4 · Landing",b:"1. Slow down (button <b>2</b>) and put the <b>gear down</b> (button <b>4</b>).<br>2. Line up with the runway — use the <b>map</b> (button 7) if you're lost.<br>3. Descend gently toward the start of the runway.<br>4. Just before touching, ease the nose <b>UP</b> a tiny bit — pilots call this the <i>flare</i>.<br>5. Touch down soft, then brakes (button <b>5</b>).",
+  r:"Lesson 4: landing. Slow down, gear down, line up with the runway, descend gently, and flare — a tiny pull up — right before touching down."},
+ {t:"Lesson 5 · Fly solo",b:"Turn off the AI helper with button <b>6</b> (or the Fly solo checkbox) and do a full flight alone: takeoff, one full turn, and a gentle landing. No coaching, no hints — just you and the sky. Your logbook records solo flights too. You've got this, pilot! ✈️",
+  r:"Lesson 5: fly solo. Turn off the AI helper and fly a full flight alone. Takeoff, one full turn, one gentle landing."}];
+var lesEl=document.getElementById("lessons");
+lesEl.innerHTML=LESSONS.map(function(L,i){
+  return '<details class="lesson" id="les'+i+'"><summary>'+esc(L.t)+'</summary><div class="lbody"><p>'+L.b+'</p>'+
+  '<button class="readbtn" data-i="'+i+'" onclick="SFRead(LESSONS[this.getAttribute(\'data-i\')].r)">🔊 Read lesson</button> '+
+  '<button class="grn" data-done="'+i+'">✓ Mark done</button></div></details>';
+}).join("");
+lesEl.querySelectorAll("[data-done]").forEach(function(b){b.onclick=function(){
+  var i=+b.getAttribute("data-done");SFpilots.markLesson(i);
+  document.getElementById("les"+i).classList.add("done");
+  b.textContent="✓ Done!";b.disabled=true;};});
+(function(){var cur=SFpilots.current();
+  if(cur){var p=SFpilots.get(cur);(p.lessons||[]).forEach(function(i){
+    var d=document.getElementById("les"+i);if(d)d.classList.add("done");});}})();
+/* ---------- craft select ---------- */
+var csel=document.getElementById("craftsel");
+Object.keys(SF_CRAFTS).forEach(function(id){
+  var o=document.createElement("option");o.value=id;o.textContent="✈️ "+SF_CRAFTS[id].name;csel.appendChild(o);});
+var craftParam=qs("craft");if(craftParam&&SF_CRAFTS[craftParam])csel.value=craftParam;
+/* ---------- button pad 1-11 ---------- */
+var BTN_NAMES={1:"Throttle +",2:"Throttle −",3:"Flaps",4:"Gear",5:"Brakes",6:"AI on/off",7:"Map",8:"Smoke",9:"Ask Siggy",10:"Pause",11:"Reset"};
+var pad=document.getElementById("btnpad");
+for(var bn=1;bn<=11;bn++){var b=document.createElement("button");b.textContent=bn+" · "+BTN_NAMES[bn];
+  b.setAttribute("data-b",bn);b.setAttribute("aria-label","Button "+bn+": "+BTN_NAMES[bn]);pad.appendChild(b);}
+pad.querySelectorAll("button").forEach(function(b){b.onclick=function(){sim.button(+b.getAttribute("data-b"));};});
+/* ---------- sim ---------- */
+var cv=document.getElementById("simcanvas"),msg=document.getElementById("flightmsg"),
+    callout=document.getElementById("palcallout");
+var demoMode=null,demoName="";
+function say(t,ms){callout.textContent="🤖 Captain Siggy: "+t;callout.style.display="block";
+  clearTimeout(say._t);say._t=setTimeout(function(){callout.style.display="none";},ms||5000);}
+var sim=new FlightSim(cv,{craft:csel.value,ai:!document.getElementById("solo").checked,
+  onEvent:function(n,d){
+    if(n==="coach"||n==="note")say(d.t);
+    else if(n==="askpal")sim.askPal();
+    else if(n==="takeoff"){say("You're flying! Climb gently and enjoy. 🎉");msg.textContent="✈️ AIRBORNE! Fly around, then come back and land.";}
+    else if(n==="landed"){say("Beautiful landing! Just like the airlines. 🎉");msg.textContent="🛬 Gentle landing! Take off again or end your flight to log hours.";}
+    else if(n==="rough")say("A field landing! Not the runway, but you walked away. Try the runway next time.");
+    else if(n==="crash"){say(d.msg+" Hit Reset (button 11) to try again.",8000);msg.textContent="💥 Crashed. Crashes are free in the sim — reset and try again!";}
+    else if(n==="aimode"){document.getElementById("solo").checked=!d.ai;}
+    else if(n==="demowp")say("Waypoint "+d.i+" of "+d.n+"…",2500);
+    else if(n==="demorestart")say("Oops — Captain Siggy will try that demo again (attempt "+d.n+").",4000);
+    else if(n==="demofail"){say("That path beat the demo pilot — try it yourself, you'll do better!",8000);
+      document.getElementById("demobanner").style.display="none";}
+    else if(n==="demodone"){say("Demo complete — that path is all yours now. Your turn, pilot!",8000);
+      msg.textContent="🤖 Demo complete! Pick this aircraft and fly the path yourself.";}
+  }});
+csel.onchange=function(){var keep=sim.time;sim=new FlightSim(cv,{craft:csel.value,ai:!document.getElementById("solo").checked,demo:demoMode,onEvent:sim.onEvent});
+  document.getElementById("demobanner").style.display=demoMode?"block":"none";};
+document.getElementById("solo").onchange=function(){sim.ai=!this.checked;
+  say(this.checked?"Solo mode — no AI helper. Good luck, pilot!":"Captain Siggy is back with you.");};
+document.getElementById("resetflight").onclick=function(){sim.button(11);};
+document.getElementById("endflight").onclick=function(){
+  var secs=Math.round(sim.time);
+  if(secs<5){msg.textContent="Fly a little first — flights under 5 seconds don't log.";return;}
+  var hrs=SFpilots.logFlight(secs,"sim");
+  var mm=Math.floor(secs/60),ss=secs%60;
+  msg.textContent="🛬 Flight logged: "+mm+"m "+ss+"s ("+hrs.toFixed(2)+"h) → "+(SFpilots.current()||"Guest")+". Nice flying!";
+  say("Flight logged! "+mm+" minutes "+ss+" seconds added to your logbook.",6000);SFchip();};
+document.getElementById("readhud").onclick=function(){
+  SFRead("Speed "+Math.round(sim.speed)+" meters per second. Altitude "+Math.round(sim.alt)+" meters. Heading "+Math.round(sim.hdg)+" degrees. Throttle "+Math.round(sim.throttle*100)+" percent.");};
+/* stick buttons (touch + mouse) */
+function bindStick(id,axis,val){
+  var el=document.getElementById(id);
+  var on=function(e){e.preventDefault();sim.stick[axis]=val;};
+  var off=function(e){e.preventDefault();if(sim.stick[axis]===val)sim.stick[axis]=0;};
+  el.addEventListener("pointerdown",on);el.addEventListener("pointerup",off);
+  el.addEventListener("pointerleave",off);el.addEventListener("pointercancel",off);}
+bindStick("stL","x",-1);bindStick("stR","x",1);bindStick("stU","y",1);bindStick("stD","y",-1);
+/* keyboard */
+var keys={};
+document.addEventListener("keydown",function(e){
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  var k=e.key;
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(k)>=0)e.preventDefault();
+  if(k==="ArrowLeft"||k==="a"||k==="A")sim.stick.x=-1;
+  else if(k==="ArrowRight"||k==="d"||k==="D")sim.stick.x=1;
+  else if(k==="ArrowUp"||k==="w"||k==="W")sim.stick.y=1;
+  else if(k==="ArrowDown"||k==="s"||k==="S")sim.stick.y=-1;
+  else if(k==="Shift")sim.button(1);
+  else if(k==="Control")sim.button(2);
+  else if(k==="f"||k==="F")sim.button(3);
+  else if(k==="g"||k==="G")sim.button(4);
+  else if(k==="b"||k==="B")sim.button(5);
+  else if(k==="m"||k==="M")sim.button(7);
+  else if(k==="p"||k==="P")sim.button(10);
+});
+document.addEventListener("keyup",function(e){
+  var k=e.key;
+  if((k==="ArrowLeft"||k==="a"||k==="A")&&sim.stick.x===-1)sim.stick.x=0;
+  if((k==="ArrowRight"||k==="d"||k==="D")&&sim.stick.x===1)sim.stick.x=0;
+  if((k==="ArrowUp"||k==="w"||k==="W")&&sim.stick.y===1)sim.stick.y=0;
+  if((k==="ArrowDown"||k==="s"||k==="S")&&sim.stick.y===-1)sim.stick.y=0;
+});
+/* demo mode */
+var demoId=qs("demo");
+if(demoId){
+  fetch("data/paths.json").then(function(r){return r.json();}).then(function(d){
+    var p=null;d.paths.forEach(function(x){if(x.id===demoId)p=x;});
+    if(!p){msg.textContent="Demo path not found.";return;}
+    demoMode={waypoints:p.waypoints,name:p.name};demoName=p.name;
+    document.getElementById("demobox").style.display="block";
+    var isGlider=p.craft==="g1";
+    document.getElementById("demoinfo").innerHTML="Watching Captain Siggy fly <b>"+esc(p.name)+"</b> ("+p.distance_km+" km, "+p.skill+") — then it's your turn. <a href='paths.html'>← back to flight paths</a> <button class='grn' id='demofly'>⏩ Skip demo — fly it yourself</button>"+
+    "<br><span style='font-size:.85em'>Demo flown at scenic altitude (same route, watchable pace)."+(isGlider?" 🪂 Glider demo flown on aerotow behind a tow plane.":"")+"</span>";
+    document.getElementById("demofly").onclick=function(){location.href="sim.html?craft="+(match||"t1");};
+    document.getElementById("simtag").textContent="🤖 AI DEMO FLIGHT: "+p.name+" — watch, then fly it yourself!";
+    document.getElementById("demobanner").style.display="block";
+    var ac=document.getElementById("craftsel");
+    var match=null;Object.keys(SF_CRAFTS).forEach(function(id){if(id===p.craft)match=id;});
+    if(match)ac.value=match;
+    sim=new FlightSim(cv,{craft:ac.value,ai:true,demo:demoMode,onEvent:sim.onEvent});
+    say("Demo flight starting — watch how it's done, pilot!",6000);
+  });
+}
+/* main loop — demo flights run at 4x so the AI tour stays watchable */
+var last=performance.now();
+var DEMO_STEPS=4;
+function loop(t){
+  var dt=Math.min(0.05,(t-last)/1000);last=t;
+  var n=demoMode?DEMO_STEPS:1;
+  for(var k=0;k<n;k++)sim.step(dt);
+  sim.render();
+  document.getElementById("h_spd").textContent=Math.round(sim.speed);
+  document.getElementById("h_alt").textContent=Math.round(sim.alt);
+  document.getElementById("h_hdg").textContent=Math.round(sim.hdg);
+  document.getElementById("h_thr").textContent=Math.round(sim.throttle*100);
+  var s2=Math.floor(sim.time);document.getElementById("h_time").textContent=Math.floor(s2/60)+":"+(s2%60<10?"0":"")+s2%60;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

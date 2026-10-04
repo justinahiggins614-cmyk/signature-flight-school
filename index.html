@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Signature Flight School — Learn to Fly with an AI Pal</title>
+<meta name="description" content="The Signature Flight School: pick any plane or jet, learn to fly with AI pal Captain Siggy, log simulator hours, and explore a million flight paths. Free.">
+<link rel="canonical" href="https://justinahiggins614-cmyk.github.io/signature-flight-school/">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<nav class="tabs" id="tabbar" aria-label="Flight School sections">
+  <a href="index.html">🏠 Main</a><a href="aircraft.html">✈️ Aircraft</a><a href="sim.html">🛩️ Flight Sim</a><a href="paths.html">🗺️ Flight Paths</a>
+  <span class="pilotchip" id="pilotchip"></span>
+</nav>
+<div class="hero"><div class="wrap">
+  <div class="plane">🛩️</div>
+  <h1><span class="gold">The Signature</span> Flight School</h1>
+  <p class="tag">Pick any plane or jet. Learn to fly with your AI pal <b>Captain Siggy</b>. Log real simulator hours. All free, right in your browser.</p>
+  <p><a class="btn gold" href="sim.html">Start Flying →</a>
+     <a class="btn ghost" href="aircraft.html">Pick an Aircraft</a></p>
+</div></div>
+<div class="wrap">
+
+<div class="sec" id="pilot">
+  <h2>🧑‍✈️ Pilot Sign-In</h2>
+  <p>Your hours live on <b>this device only</b> — no accounts, no passwords. Pick your pilot name and every flight gets logged to you.</p>
+  <div id="pilotbox"></div>
+</div>
+
+<div class="sec">
+  <h2>🎯 Our Mission</h2>
+  <p>Every kid — and every grown-up kid — should feel what it's like to fly. The Signature Flight School teaches real flying ideas (lift, turns, landings) in plain words, with an AI pal who never gets tired of your questions and a simulator that lets you crash safely a hundred times before your first perfect landing.</p>
+  <div class="grid">
+    <div class="card"><h3>✈️ 12 Aircraft</h3><p class="meta">From the gentle Skyhopper trainer to the Starhopper rocket plane — each with a skill level, so you always know what's next.</p><a class="btn" href="aircraft.html">Browse Aircraft</a></div>
+    <div class="card"><h3>🤖 Captain Siggy</h3><p class="meta">Your AI pal instructor. Step-by-step lessons, real-time coaching while you fly, and a solo mode when you're ready.</p><a class="btn" href="sim.html">Meet Your Instructor</a></div>
+    <div class="card"><h3>🗺️ Flight Paths</h3><p class="meta">A growing catalog of simulated flight paths over Earth — watch the AI fly any of them, then fly it yourself.</p><a class="btn" href="paths.html">Explore Paths</a></div>
+  </div>
+</div>
+
+<div class="sec">
+  <h2>📖 How It Works</h2>
+  <div class="grid">
+    <div class="card"><h3>1 · Sign in</h3><p class="meta">Choose a pilot name above. Your hours and flights are saved on this device.</p></div>
+    <div class="card"><h3>2 · Learn the controls</h3><p class="meta">Captain Siggy's lessons teach the stick (up/down/left/right), buttons 1–11, and keyboard keys — in plain words.</p></div>
+    <div class="card"><h3>3 · Fly the sim</h3><p class="meta">Take off, turn, land. Gentle landings earn praise; crashes earn coaching. Every flight logs hours.</p></div>
+    <div class="card"><h3>4 · Fly solo</h3><p class="meta">Turn off the AI helper and prove you can do it alone. Your logbook shows both.</p></div>
+  </div>
+</div>
+
+<div class="sec">
+  <h2>📊 Your Logbook</h2>
+  <div id="logbook"><p class="statusline">Sign in above to see your logbook.</p></div>
+</div>
+
+<div id="jahnet"></div>
+<footer>The Signature Flight School · Made by Justin Addam Higgins · Draft training content — real flight instruction comes from certified instructors.</footer>
+</div>
+<script src="js/shared.js"></script>
+<script>
+SFNAV();SFTABS("main");SFchip();
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function renderPilot(){
+  var box=document.getElementById("pilotbox"),cur=SFpilots.current();
+  if(cur){var p=SFpilots.get(cur);
+    box.innerHTML='<p>Welcome back, <b style="color:var(--gold)">'+esc(cur)+'</b>!</p>'+
+    '<p class="meta">⏱️ '+p.hours.toFixed(1)+' simulator hours · 🛫 '+p.flights+' flights · 🎓 '+(p.lessons||[]).length+' lessons done</p>'+
+    '<button class="ghost" id="switchp">Switch pilot</button> <button class="ghost" id="newp">New pilot</button>';
+  }else{
+    box.innerHTML='<label class="fl" for="pname">Pilot name</label>'+
+    '<input type="text" id="pname" placeholder="e.g. Sky Captain Alex" maxlength="40" aria-label="Pilot name">'+
+    '<br><button class="gold" id="gop">✈️ Sign In &amp; Start Flying</button>';
+  }
+  var g=document.getElementById("gop");
+  if(g)g.onclick=function(){var v=document.getElementById("pname").value.trim();
+    if(!v){alert("Pick a pilot name first!");return;}
+    SFpilots.signin(v);renderPilot();renderLog();SFchip();};
+  var s=document.getElementById("switchp"),n=document.getElementById("newp");
+  if(s)s.onclick=function(){var all=SFpilots.all(),ks=Object.keys(all);
+    var pick=prompt("Pick a pilot:\n"+ks.join("\n"));if(pick&&all[pick]){SFpilots.signin(pick);renderPilot();renderLog();SFchip();}};
+  if(n)n.onclick=function(){SFpilots.signout();renderPilot();renderLog();SFchip();};
+}
+function renderLog(){
+  var el=document.getElementById("logbook"),cur=SFpilots.current();
+  if(!cur){el.innerHTML='<p class="statusline">Sign in above to see your logbook.</p>';return;}
+  var p=SFpilots.get(cur);
+  el.innerHTML='<p>🧑‍✈️ <b>'+esc(cur)+'</b></p>'+
+   '<p class="meta">⏱️ Total simulator hours: <b style="color:var(--gold)">'+p.hours.toFixed(1)+'h</b><br>'+
+   '🛫 Flights logged: <b>'+p.flights+'</b><br>🎓 Lessons completed: <b>'+(p.lessons||[]).length+' / 5</b></p>'+
+   '<button class="ghost" onclick="SFRead(\'Pilot '+esc(cur).replace(/'/g,"")+'. '+p.hours.toFixed(1)+' simulator hours. '+p.flights+' flights. '+(p.lessons||[]).length+' of 5 lessons done.\')">🔊 Read my logbook</button>';
+}
+renderPilot();renderLog();
+</script>
+</body>
+</html>
