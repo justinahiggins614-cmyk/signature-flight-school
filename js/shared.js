@@ -2,7 +2,7 @@
 (function(){
 "use strict";
 var BASE="https://justinahiggins614-cmyk.github.io/";
-/* ---------- network nav (31 sites; 29 = YOU ARE HERE) ---------- */
+/* ---------- network nav (35 sites; 29 = YOU ARE HERE) ---------- */
 var SITES=[
 ["signature-math/","1 Signature Math"],["jah-calculator/","2 Signature Universal Paradox Immune Calculator"],
 ["jah-dictionary/","3 The Signature Dictionary"],["jah-wiki/","4 JAH Wiki"],
@@ -27,7 +27,9 @@ var SITES=[
 ["signature-game-store/","30 The Signature Game Store"],
 ["signature-website-creator/","31 The Signature Website Creator"],
 ["signature-antivirus/","32 The Signature Antivirus"],
-["signature-os-updater/","33 The Signature OS Updater"]];
+["signature-os-updater/","33 The Signature OS Updater"],
+["signature-space-mapping/","34 Signature Space Mapping"],
+["signature-cookbook/","35 The Signature Cookbook"]];
 window.SFNAV=function(){
   var h='<div class="jahnet"><span class="t">THE JAH NETWORK</span><br>';
   for(var i=0;i<SITES.length;i++) h+='<a href="'+BASE+SITES[i][0]+'">'+SITES[i][1]+'</a>';
