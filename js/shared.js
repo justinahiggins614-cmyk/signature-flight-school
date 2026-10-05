@@ -92,21 +92,23 @@ window.SFStop=function(){try{if(window.__JAHREAD)window.__JAHREAD.stopAll();}cat
 window.sfReadCard=function(el){var t=el.getAttribute("data-read");if(t)window.SFRead(t);};
 /* ---------- pilot profiles (device-local) ---------- */
 var PKEY="sf_pilots_v1",CKEY="sf_current_pilot";
-function loadPilots(){try{return JSON.parse(localStorage.getItem(PKEY))||{};}catch(e){return{};}}
-function savePilots(p){try{localStorage.setItem(PKEY,JSON.stringify(p));}catch(e){}}
+/* JAHProfile storage wrapper (JAHPS): public visitors pass keys through unprefixed (behavior unchanged); signed-in profiles get per-profile namespaced storage. */
+var JAHPS=(function(){try{return (typeof JAHProfile!=="undefined")&&JAHProfile.store?JAHProfile.store:localStorage;}catch(e){return localStorage;}})();
+function loadPilots(){try{return JSON.parse(JAHPS.get(PKEY))||{};}catch(e){return{};}}
+function savePilots(p){try{JAHPS.set(PKEY,JSON.stringify(p));}catch(e){}}
 window.SFpilots={
   all:function(){return loadPilots();},
-  current:function(){var p=loadPilots();var n=null;try{n=localStorage.getItem(CKEY);}catch(e){}
+  current:function(){var p=loadPilots();var n=null;try{n=JAHPS.get(CKEY);}catch(e){}
     if(n&&p[n])return n;var ks=Object.keys(p);return ks.length?ks[0]:null;},
   get:function(name){var p=loadPilots();return p[name]||null;},
   signin:function(name){
     name=String(name).trim().slice(0,40);if(!name)return null;
     var p=loadPilots();
     if(!p[name])p[name]={name:name,hours:0,flights:0,lessons:[],created:Date.now()};
-    savePilots(p);try{localStorage.setItem(CKEY,name);}catch(e){}
+    savePilots(p);try{JAHPS.set(CKEY,name);}catch(e){}
     return p[name];
   },
-  signout:function(){try{localStorage.removeItem(CKEY);}catch(e){}},
+  signout:function(){try{JAHPS.remove(CKEY);}catch(e){}},
   logFlight:function(seconds,note){
     var n=window.SFpilots.current();if(!n)return 0;
     var p=loadPilots();if(!p[n])return 0;

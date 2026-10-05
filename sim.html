@@ -79,6 +79,7 @@
 <div id="jahnet"></div>
 <footer>The Signature Flight School · Made by Justin Addam Higgins</footer>
 </div>
+<script src="js/signin.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/sim.js"></script>
 <script>
@@ -148,20 +149,20 @@ var gfxsel=document.getElementById("gfxsel");
 function applyView(){
   var g=parseInt(gfxsel.value,10);if(!(g>=0&&g<=5))g=4;
   sim.gfx=g;
-  try{localStorage.setItem("sf_gfx",String(g));}catch(e){}
+  try{JAHPS.set("sf_gfx",String(g));}catch(e){}
   var vbs=document.querySelectorAll(".viewbtn");
   for(var i=0;i<vbs.length;i++)vbs[i].classList.toggle("on",+vbs[i].getAttribute("data-v")===sim.view);
 }
-try{var sg=localStorage.getItem("sf_gfx");if(sg!==null&&+sg>=0&&+sg<=5)gfxsel.value=sg;}catch(e){}
-try{var sv=localStorage.getItem("sf_view");if(sv!==null&&+sv>=0&&+sv<=2)sim.view=+sv;}catch(e){}
+try{var sg=JAHPS.get("sf_gfx");if(sg!==null&&+sg>=0&&+sg<=5)gfxsel.value=sg;}catch(e){}
+try{var sv=JAHPS.get("sf_view");if(sv!==null&&+sv>=0&&+sv<=2)sim.view=+sv;}catch(e){}
 gfxsel.onchange=applyView;
 document.querySelectorAll(".viewbtn").forEach(function(b){
   b.onclick=function(){sim.view=+b.getAttribute("data-v");
-    try{localStorage.setItem("sf_view",String(sim.view));}catch(e){}
+    try{JAHPS.set("sf_view",String(sim.view));}catch(e){}
     applyView();};
 });
 function cycleView(){sim.view=(sim.view+1)%3;
-  try{localStorage.setItem("sf_view",String(sim.view));}catch(e){}applyView();}
+  try{JAHPS.set("sf_view",String(sim.view));}catch(e){}applyView();}
 applyView();
 csel.onchange=function(){var keep=sim.time;sim=new FlightSim(cv,{craft:csel.value,ai:!document.getElementById("solo").checked,demo:demoMode,onEvent:sim.onEvent});
   applyView();
@@ -331,7 +332,9 @@ requestAnimationFrame(loop);
 /* ---------- first-visit WELCOME overlay (2026-10-04 standard): centered modal.
    NO auto-scroll, NO spotlight, NO section jumps — the page stays put, the overlay teaches. ---------- */
 var FLAG="jah-tour-seen-flightschool";
-function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+/* JAHProfile storage wrapper (JAHPS): public visitors pass keys through unprefixed (behavior unchanged); signed-in profiles get per-profile namespaced storage. */
+var JAHPS=(function(){try{return (typeof JAHProfile!=="undefined")&&JAHProfile.store?JAHProfile.store:localStorage;}catch(e){return localStorage;}})();
+function ls(k,v){try{if(v===undefined)return JAHPS.get(k);JAHPS.set(k,v)}catch(e){return null}}
 var w=document.getElementById("jahWelcome"),
     guide=document.getElementById("jahGuide"),
     guideCard=document.getElementById("jahGuideCard"),
@@ -356,5 +359,16 @@ guide.addEventListener("click",function(e){if(e.target===guide)closeGuide()});
 var __qs="",__hash="";try{__qs=location.search;__hash=location.hash}catch(e){}
 if(!ls(FLAG)&&__qs.indexOf("craft=")<0){setTimeout(openWelcome,900)}
 }catch(e){}})();</script>
+<script>
+(function () {
+  /* JAHProfile sign-in — mount the header button. signin.js is already loaded above. */
+  var mount = document.querySelector('header .booksearch') ||
+              document.querySelector('nav.jtabbar') ||
+              document.querySelector('header nav') ||
+              document.querySelector('header') ||
+              document.body;
+  if (window.JAHProfile && JAHProfile.ui) JAHProfile.ui.renderButton(mount);
+})();
+</script>
 </body>
 </html>

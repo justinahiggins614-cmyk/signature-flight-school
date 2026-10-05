@@ -18,7 +18,19 @@
      <a href="sim.html" style="color:var(--gold);font-weight:bold">🛩️ Flight Sim</a> ·
      <a href="paths.html" style="color:var(--gold);font-weight:bold">🗺️ Flight Paths</a></p>
 </div><div id="jahnet"></div></div>
+<script src="js/signin.js"></script>
 <script src="js/shared.js"></script>
 <script>SFNAV();</script>
+<script>
+(function () {
+  /* JAHProfile sign-in — mount the header button. signin.js is already loaded above. */
+  var mount = document.querySelector('header .booksearch') ||
+              document.querySelector('nav.jtabbar') ||
+              document.querySelector('header nav') ||
+              document.querySelector('header') ||
+              document.body;
+  if (window.JAHProfile && JAHProfile.ui) JAHProfile.ui.renderButton(mount);
+})();
+</script>
 </body>
 </html>
