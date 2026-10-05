@@ -2,38 +2,48 @@
 (function(){
 "use strict";
 var BASE="https://justinahiggins614-cmyk.github.io/";
-/* ---------- network nav (35 sites; 29 = YOU ARE HERE) ---------- */
+/* ---------- network nav (37 sites; 27 = YOU ARE HERE) ---------- */
 var SITES=[
-["signature-math/","1 Signature Math"],["jah-calculator/","2 Signature Universal Paradox Immune Calculator"],
-["jah-dictionary/","3 The Signature Dictionary"],["jah-wiki/","4 JAH Wiki"],
-["jah-n-wiki-leaks/","5 JAH-N Wiki Leaks"],["signature-llama/","6 Signature Llama"],
-["jah-ai-models/","7 The Signature AI Phone Book"],["cyber-patent-catalog/","8 Globally Rejustered Patent Catalog"],
+["signature-math/","1 Signature Math"],
+["jah-calculator/","2 Signature Universal Paradox Immune Calculator"],
+["jah-dictionary/","3 The Signature Dictionary"],
+["jah-wiki/","4 JAH Wiki"],
+["jah-n-wiki-leaks/","5 JAH-N Wiki Leaks"],
+["signature-llama/","6 Signature Llama"],
+["jah-ai-models/","7 The Signature AI Phone Book"],
+["cyber-patent-catalog/","8 Globally Rejustered Patent Catalog"],
 ["signature-one-archive/specs.html","9 Signature Spec Catalog Pending Patents"],
-["jah-computer-systems/","10 The Signature PC System Depository"],["signature-books/","11 The Signature Book Depository"],
-["signature-comics/","12 The Signature Comic Store"],["signature-newspapers/","13 The Signature Global Newspaper Archive"],
+["jah-computer-systems/","10 The Signature PC System Depository"],
+["signature-books/","11 The Signature Book Depository"],
+["signature-comics/","12 The Signature Comic Store"],
+["signature-newspapers/","13 The Signature Global Newspaper Archive"],
 ["signature-backend/","14 The Signature AI Mix and Match Generator"],
 ["signature-boundless-generators/","15 The Signature Boundless Generator Archive"],
-["signature-ai-mixlab/","16 The Signature AI Mix Lab"],["signature-ai-olypics/","17 AI Olympics"],
+["signature-ai-mixlab/","16 The Signature AI Mix Lab"],
+["signature-ai-olypics/","17 AI Olympics"],
 ["signature-chip-maker/","18 The Signature Computer Chip Maker and Archive"],
 ["signature-app-archive/","19 The Signature App Archive"],
 ["signature-ai-robot-matcher/","20 The Signature AI to Robot Matcher"],
 ["signature-experiment-solver/","21 The Signature Experiment Solver"],
 ["signature-ai-image-video-maker/","22 Signature AI Pixel"],
-["signature-ai-song-maker/","23 Signature Music Studio"],["signature-fixit/","24 The Signature Mr Fix-It"],
-["signature-university/","25 The Signature University"],
-["signature-cyber-mega-mall/","26 The Signature Cyber Mega-Mall"],
-["signature-3d-print/","27 The Signature 3D Print Mega Mall"],
-["signature-earth/","28 Signature Earth"],
-["signature-game-store/","30 The Signature Game Store"],
-["signature-website-creator/","31 The Signature Website Creator"],
-["signature-antivirus/","32 The Signature Antivirus"],
-["signature-os-updater/","33 The Signature OS Updater"],
-["signature-space-mapping/","34 Signature Space Mapping"],
-["signature-cookbook/","35 The Signature Cookbook"]];
+["signature-ai-song-maker/","23 Signature Music Studio"],
+["signature-fixit/","24 The Signature Mr Fix-It"],
+["signature-university/","25 Signature University"],
+["signature-earth/","26 Signature Earth"],
+["signature-game-store/","28 The Signature Game Store"],
+["signature-website-creator/","29 The Signature Website Creator"],
+["signature-antivirus/","30 The Signature Antivirus"],
+["signature-os-updater/","31 The Signature OS Updater"],
+["signature-space-mapping/","32 Signature Space Mapping"],
+["signature-cookbook/","33 The Signature Cookbook"],
+["signature-spell-check/","34 The Signature Spell Check"],
+["signature-image-grid-measure/","35 The Signature Image Grid and Measure"],
+["signature-cyber-mega-mall/","36 The Signature Cyber Mega-Mall"],
+["signature-3d-print/","37 The Signature 3D Print Mega Mall"]];
 window.SFNAV=function(){
   var h='<div class="jahnet"><span class="t">THE JAH NETWORK</span><br>';
   for(var i=0;i<SITES.length;i++) h+='<a href="'+BASE+SITES[i][0]+'">'+SITES[i][1]+'</a>';
-  h+='<br><span class="here">29 The Signature Flight School — YOU ARE HERE</span></div>';
+  h+='<br><span class="here">27 The Signature Flight School — YOU ARE HERE</span></div>';
   var el=document.getElementById("jahnet"); if(el) el.innerHTML=h;
 };
 /* ---------- tab bar active state ---------- */
