@@ -36,6 +36,9 @@ FlightSim.prototype.reset=function(){
   S.flaps=false;S.gear=true;S.brakes=false;S.smoke=false;S.mapView=false;S.paused=false;
   S.time=0;S.vy=0;S.stick={x:0,y:0};S.demoIdx=0;S.demoDone=false;S.trail=[];
   S.clouds=[];for(var i=0;i<24;i++)S.clouds.push({x:(Math.random()-0.5)*8000,z:Math.random()*8000-1000,y:400+Math.random()*900,s:60+Math.random()*120});
+  S.cloudsHi=[];for(var ci=0;ci<9;ci++)S.cloudsHi.push({x:(Math.random()-0.5)*9000,z:Math.random()*9000-1500,y:1500+Math.random()*900,s:90+Math.random()*130});
+  S.stars=[];for(var sti=0;sti<90;sti++)S.stars.push({x:Math.random()*960,y:Math.random()*380,r:0.6+Math.random()*1.4,tw:Math.random()*6.28});
+  S.parts=[];S.tod=0.32;S.fxT=0; /* fx state: hi clouds, stars, exhaust particles, time-of-day, fx clock */
   S.ev("reset",{});
 };
 FlightSim.prototype.ev=function(n,d){try{this.onEvent(n,d||{});}catch(e){}};
@@ -103,6 +106,7 @@ FlightSim.prototype.step=function(dt){
   /* trail */
   if(S.smoke&&!S.onGround){S.trail.push({t:0});if(S.trail.length>40)S.trail.shift();}
   S.trail.forEach(function(p){p.t+=dt;});
+  S.fxUpdate(dt);
   S.coachT=(S.coachT||0)+dt;
   if(S.coachT>1.6&&S.ai&&!S.demo){S.coachT=0;S.coach();}
 };
@@ -181,26 +185,115 @@ FlightSim.prototype.autopilot=function(dt){
     }
   }
 };
-/* ---- rendering ---- */
+/* ---- cinematic effects helpers (client-side canvas, phone-friendly) ---- */
+function hexA(hex,a){ /* "#rrggbb" + alpha -> rgba() */
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return "rgba("+r+","+g+","+b+","+a.toFixed(3)+")";
+}
+function mixc(a,b,k){
+  var ar=parseInt(a.slice(1,3),16),ag=parseInt(a.slice(3,5),16),ab=parseInt(a.slice(5,7),16);
+  var br=parseInt(b.slice(1,3),16),bg=parseInt(b.slice(3,5),16),bb=parseInt(b.slice(5,7),16);
+  function hx(v){v=Math.round(Math.max(0,Math.min(255,v)));return (v<16?"0":"")+v.toString(16);}
+  return "#"+hx(ar+(br-ar)*k)+hx(ag+(bg-ag)*k)+hx(ab+(bb-ab)*k);
+}
+/* sky keyframes by sun elevation (radians): night -> dusk -> morning -> day */
+var SKYPALS=[
+ {e:-1.2, sky:["#020610","#0a1430","#16244a"], gnd:["#0c1f14","#060f08"], star:1},
+ {e:-0.10,sky:["#1a1440","#4a2a5a","#c96a3a"], gnd:["#2a3a22","#101a0e"], star:0.3},
+ {e:0.10, sky:["#2a4a8a","#6a9ad5","#ffd9a0"], gnd:["#4a8f4a","#1d4a1d"], star:0},
+ {e:0.45, sky:["#0a2352","#3a7bd5","#9fd0ff"], gnd:["#4a8f4a","#1d4a1d"], star:0}
+];
+function skyPal(e){
+  var p=SKYPALS,i;
+  if(e<=p[0].e)return [p[0].sky,p[0].gnd,p[0].star];
+  for(i=0;i<p.length-1;i++){if(e<=p[i+1].e)break;}
+  if(i>=p.length-1)return [p[p.length-1].sky,p[p.length-1].gnd,p[p.length-1].star];
+  var a=p[i],b=p[i+1],k=(e-a.e)/(b.e-a.e);
+  return [[mixc(a.sky[0],b.sky[0],k),mixc(a.sky[1],b.sky[1],k),mixc(a.sky[2],b.sky[2],k)],
+          [mixc(a.gnd[0],b.gnd[0],k),mixc(a.gnd[1],b.gnd[1],k)],
+          a.star+(b.star-a.star)*k];
+}
+/* shaded, volumetric-looking cloud puffs */
+function drawClouds(ctx,S,list,hi,proj,F,H){
+  for(var i=0;i<list.length;i++){var c=list[i];
+    var p=proj(c.x,c.z,c.y);if(!p)continue;
+    if(p[1]<-180||p[1]>H+180)continue;
+    var s2=Math.min(c.s*F/Math.max(60,Math.hypot(c.x-S.x,c.z-S.z)),hi?170:260);
+    var a=hi?0.5:0.88;
+    ctx.fillStyle="rgba(150,170,198,"+(a*0.55).toFixed(3)+")";
+    ctx.beginPath();ctx.ellipse(p[0],p[1]+s2*0.22,s2,s2*0.40,0,0,7);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,"+a.toFixed(3)+")";
+    ctx.beginPath();ctx.ellipse(p[0],p[1],s2,s2*0.42,0,0,7);ctx.fill();
+    ctx.fillStyle="rgba(255,255,255,"+Math.min(1,a+0.12).toFixed(3)+")";
+    ctx.beginPath();ctx.ellipse(p[0]-s2*0.15,p[1]-s2*0.18,s2*0.55,s2*0.24,0,0,7);ctx.fill();
+  }
+}
+/* per-frame effect state: dt-driven so AI demo (4x steps) stays correct */
+FlightSim.prototype.fxUpdate=function(dt){
+  var S=this;
+  S.fxT+=dt;
+  S.tod=(S.tod+dt/1500)%1; /* ~25-minute day cycle */
+  var want=S.crashed?0:Math.round(S.throttle*30);
+  for(var i=0;i<want;i++){
+    if(S.parts.length<110&&Math.random()<dt*36){
+      var side=Math.random()<0.5?-1:1;
+      S.parts.push({x:S.W/2+side*(26+Math.random()*34),y:S.H*0.92,
+        vx:side*(18+Math.random()*44),vy:110+Math.random()*130,
+        t:0,life:0.35+Math.random()*0.3,s:2+Math.random()*3});
+    }
+  }
+  for(var j=S.parts.length-1;j>=0;j--){var p=S.parts[j];p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.t>=p.life)S.parts.splice(j,1);}
+};
+/* ---- rendering: cockpit view, modern jet-game-grade effects ----
+   Physics, controls, lessons, AI instructor and demo autopilot are untouched;
+   this function only paints. Effects: sun-position sky + day cycle + stars,
+   shaded two-layer clouds, procedural training terrain + river, afterburner
+   glow + heat shimmer, wingtip vapor, exhaust particles, camera shake,
+   speed lines. Cockpit-attached effects (reticle, AB glow) skip the shake. */
 FlightSim.prototype.render=function(){
   var S=this,ctx=S.ctx,W=S.W,H=S.H;
   var F=H*1.15,cx=W/2;
   var pitchR=S.pitch*Math.PI/180,rollR=S.roll*Math.PI/180;
   var horY=H/2+S.pitch*7;
+  var spdK=S.craft.max>0?S.speed/S.craft.max:0;
+  var abOn=S.craft.max>=150&&S.throttle>0.8&&!S.crashed;
+  /* sun + palette from time of day */
+  var sunEl=Math.sin((S.tod-0.25)*2*Math.PI)*1.05;
+  var pal=skyPal(sunEl),starA=pal[2];
+  /* camera shake from speed + afterburner (world only, never the overlays) */
+  var shk=(S.paused||S.crashed)?0:(spdK*spdK*5+(abOn?S.throttle*4:0));
+  ctx.save();
+  ctx.translate((Math.random()-0.5)*2*shk,(Math.random()-0.5)*2*shk);
   /* sky */
-  var g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,"#0a2352");g.addColorStop(0.55,"#3a7bd5");g.addColorStop(1,"#9fd0ff");
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  /* sun */
-  ctx.fillStyle="rgba(255,240,180,.9)";ctx.beginPath();ctx.arc(W*0.78,H*0.18,34,0,7);ctx.fill();
+  var g=ctx.createLinearGradient(0,-60,0,H);
+  g.addColorStop(0,pal[0][0]);g.addColorStop(0.55,pal[0][1]);g.addColorStop(1,pal[0][2]);
+  ctx.fillStyle=g;ctx.fillRect(-20,-60,W+40,H+120);
+  /* stars at night */
+  if(starA>0.02){
+    for(var si=0;si<S.stars.length;si++){var st=S.stars[si];
+      ctx.fillStyle="rgba(255,255,255,"+(starA*(0.35+0.4*Math.abs(Math.sin(S.fxT*1.5+st.tw)))).toFixed(3)+")";
+      ctx.fillRect(st.x,st.y,st.r,st.r);}
+  }
+  /* sun with glow + flare, positioned by heading/pitch */
+  var relB=(60-S.hdg)*Math.PI/180;
+  while(relB>Math.PI)relB-=2*Math.PI;while(relB<-Math.PI)relB+=2*Math.PI;
+  var sunX=cx+Math.tan(Math.max(-1.2,Math.min(1.2,relB)))*F*0.9;
+  var sunY=horY-Math.tan(sunEl-pitchR)*F;
+  if(Math.abs(relB)<1.2&&sunY>-90&&sunY<H+90){
+    var sg=ctx.createRadialGradient(sunX,sunY,8,sunX,sunY,130);
+    sg.addColorStop(0,"rgba(255,244,200,.95)");sg.addColorStop(0.25,"rgba(255,220,150,.55)");sg.addColorStop(1,"rgba(255,200,120,0)");
+    ctx.fillStyle=sg;ctx.fillRect(sunX-130,sunY-130,260,260);
+    ctx.fillStyle="rgba(255,246,205,.95)";ctx.beginPath();ctx.arc(sunX,sunY,30,0,7);ctx.fill();
+    var fg=ctx.createLinearGradient(sunX-220,0,sunX+220,0);
+    fg.addColorStop(0,"rgba(255,220,160,0)");fg.addColorStop(0.5,"rgba(255,220,160,.35)");fg.addColorStop(1,"rgba(255,220,160,0)");
+    ctx.fillStyle=fg;ctx.fillRect(sunX-220,sunY-3,440,6);
+  }
   /* rotated world */
   ctx.save();ctx.translate(cx,horY);ctx.rotate(-rollR);ctx.translate(-cx,-horY);
-  /* ground */
+  /* ground base */
   var gg=ctx.createLinearGradient(0,horY,0,H+200);
-  gg.addColorStop(0,"#4a8f4a");gg.addColorStop(1,"#1d4a1d");
+  gg.addColorStop(0,pal[1][0]);gg.addColorStop(1,pal[1][1]);
   ctx.fillStyle=gg;ctx.fillRect(-W,horY,W*3,H*2);
-  /* ground grid */
-  ctx.strokeStyle="rgba(255,255,255,.28)";ctx.lineWidth=1;
   var h=S.hdg*Math.PI/180,fx=Math.sin(h),fz=Math.cos(h),rx=Math.cos(h),rz=-Math.sin(h);
   function proj(wx,wz,wy){
     var dx=wx-S.x,dz=wz-S.z;
@@ -208,7 +301,22 @@ FlightSim.prototype.render=function(){
     if(fwd<8)return null;
     return [cx+(lat/fwd)*F, horY+((S.alt-(wy||0))/fwd)*F];
   }
-  /* longitudinal lines (lateral offsets perpendicular to heading) */
+  /* procedural training-terrain patchwork (decorative, deterministic) */
+  var TS=400,gx0=Math.floor((S.x-1400)/TS)*TS;
+  var FIELDS=["#5a9a4a","#7aa04c","#a08a4a","#4a7a3a","#8a9a5a","#6a8a42"];
+  for(var gx=gx0;gx<S.x+1400;gx+=TS){
+    for(var gz=Math.floor(S.z/TS)*TS;gz<S.z+1800;gz+=TS){
+      var q0=proj(gx,gz,0),q1=proj(gx+TS,gz,0),q2=proj(gx+TS,gz+TS,0),q3=proj(gx,gz+TS,0);
+      if(!q0||!q1||!q2||!q3)continue;
+      var hh=Math.abs(Math.sin(gx*12.9898+gz*78.233)*43758.5453)%1;
+      if(hh>0.88)continue;
+      var da=Math.max(0.18,0.6-Math.abs((q0[1]+q2[1])/2-horY)/900);
+      ctx.fillStyle=hexA(FIELDS[Math.floor(hh*6)%6],da);
+      ctx.beginPath();ctx.moveTo(q0[0],q0[1]);ctx.lineTo(q1[0],q1[1]);ctx.lineTo(q2[0],q2[1]);ctx.lineTo(q3[0],q3[1]);ctx.closePath();ctx.fill();
+    }
+  }
+  /* training nav grid */
+  ctx.strokeStyle="rgba(255,255,255,.22)";ctx.lineWidth=1;
   for(var lat=-600;lat<=600;lat+=120){
     ctx.beginPath();var started=false;
     for(var d=20;d<2600;d+=60){
@@ -218,13 +326,12 @@ FlightSim.prototype.render=function(){
     }
     ctx.stroke();
   }
-  /* lateral lines */
   for(var dd=120;dd<2600;dd+=160){
-    ctx.beginPath();var st=false;
+    ctx.beginPath();var st2=false;
     for(var la=-600;la<=600;la+=60){
       var wx4=S.x+la*rx+dd*fx, wz4=S.z+la*rz+dd*fz;
       var r3=proj(wx4,wz4,0);
-      if(r3){if(!st){ctx.moveTo(r3[0],r3[1]);st=true;}else ctx.lineTo(r3[0],r3[1]);}
+      if(r3){if(!st2){ctx.moveTo(r3[0],r3[1]);st2=true;}else ctx.lineTo(r3[0],r3[1]);}
     }
     ctx.stroke();
   }
@@ -240,15 +347,18 @@ FlightSim.prototype.render=function(){
     if(c1&&c2){ctx.beginPath();ctx.moveTo(c1[0],c1[1]);ctx.lineTo(c2[0],c2[1]);ctx.stroke();}
     ctx.setLineDash([]);
   }
-  /* clouds */
-  S.clouds.forEach(function(c){
-    var p=proj(c.x,c.z,c.y);
-    if(p&&p[1]>-100&&p[1]<H+100){var s2=c.s*F/Math.max(60,Math.hypot(c.x-S.x,c.z-S.z));
-      s2=Math.min(s2,220);
-      ctx.fillStyle="rgba(255,255,255,.85)";
-      ctx.beginPath();ctx.ellipse(p[0],p[1],s2,s2*0.42,0,0,7);ctx.fill();}
-  });
-  /* smoke trail */
+  /* river (decorative) */
+  ctx.fillStyle="rgba(80,150,210,.8)";
+  for(var rvx=Math.floor((S.x-2000)/200)*200;rvx<S.x+2000;rvx+=200){
+    var rvz=2200+500*Math.sin(rvx*0.0009)+180*Math.sin(rvx*0.0027+1.3);
+    var rp=proj(rvx,rvz,0);
+    if(rp){var rr=Math.min(60,F*36/Math.max(60,Math.hypot(rvx-S.x,rvz-S.z)));
+      ctx.beginPath();ctx.arc(rp[0],rp[1],rr,0,7);ctx.fill();}
+  }
+  /* cloud layers */
+  drawClouds(ctx,S,S.clouds,false,proj,F,H);
+  drawClouds(ctx,S,S.cloudsHi,true,proj,F,H);
+  /* smoke trail (button 8) */
   if(S.smoke&&!S.onGround){
     S.trail.forEach(function(p,i){
       ctx.fillStyle="rgba(255,255,255,"+(0.5*(1-p.t/3))+")";
@@ -256,13 +366,61 @@ FlightSim.prototype.render=function(){
     });
   }
   ctx.restore();
+  /* night dim over the world */
+  if(starA>0.02){ctx.fillStyle="rgba(6,10,28,"+(starA*0.45).toFixed(3)+")";ctx.fillRect(-20,-60,W+40,H+120);}
   /* hills silhouette (unrotated) */
-  ctx.fillStyle="rgba(20,60,40,.85)";ctx.beginPath();ctx.moveTo(0,horY);
-  for(var hx=0;hx<=W;hx+=20){
-    var hh=Math.sin((hx+S.hdg*4)*0.02)*26+Math.sin((hx+S.hdg*9)*0.05)*10;
-    ctx.lineTo(hx,horY+hh-14);
+  ctx.fillStyle="rgba(20,60,40,.85)";ctx.beginPath();ctx.moveTo(-20,horY);
+  for(var hx=-20;hx<=W+20;hx+=20){
+    var hhl=Math.sin((hx+S.hdg*4)*0.02)*26+Math.sin((hx+S.hdg*9)*0.05)*10;
+    ctx.lineTo(hx,horY+hhl-14);
   }
-  ctx.lineTo(W,horY);ctx.closePath();ctx.fill();
+  ctx.lineTo(W+20,horY);ctx.closePath();ctx.fill();
+  ctx.restore(); /* end camera shake */
+  /* ---- cockpit-attached effects (no shake) ---- */
+  var pi,pt;
+  for(pi=0;pi<S.parts.length;pi++){pt=S.parts[pi];
+    ctx.fillStyle="rgba(200,200,200,"+(0.32*(1-pt.t/pt.life)).toFixed(3)+")";
+    ctx.beginPath();ctx.arc(pt.x,pt.y,Math.max(0.5,pt.s*(1-pt.t/pt.life*0.5)),0,7);ctx.fill();}
+  /* afterburner glow + heat shimmer */
+  if(abOn){
+    var fl=0.7+0.3*Math.sin(S.fxT*43)+0.15*Math.sin(S.fxT*29+1);
+    var by=H*0.99;
+    var rg=ctx.createRadialGradient(cx,by,10,cx,by,150*Math.max(0.4,fl));
+    rg.addColorStop(0,"rgba(255,200,120,.85)");rg.addColorStop(0.4,"rgba(255,120,40,.45)");rg.addColorStop(1,"rgba(255,80,20,0)");
+    ctx.fillStyle=rg;ctx.fillRect(cx-160,by-170,320,180);
+    ctx.fillStyle="rgba(180,220,255,.9)";
+    ctx.beginPath();ctx.ellipse(cx,by-24,26*fl,44*fl,0,0,7);ctx.fill();
+    ctx.fillStyle="rgba(255,240,200,.95)";
+    ctx.beginPath();ctx.ellipse(cx,by-20,13*fl,30*fl,0,0,7);ctx.fill();
+    for(var shi=0;shi<3;shi++){
+      ctx.fillStyle="rgba(255,255,255,.06)";
+      var swy=by-90-shi*46+Math.sin(S.fxT*9+shi*2)*8;
+      ctx.fillRect(cx-120+Math.sin(S.fxT*7+shi)*10,swy,240,16);
+    }
+  }
+  /* wingtip vapor at high G */
+  var gLd=Math.abs(S.roll)/55*spdK;
+  if(gLd>0.45&&!S.onGround&&!S.paused&&!S.crashed){
+    var va=Math.min(0.5,(gLd-0.45)*1.4);
+    for(var vs=-1;vs<=1;vs+=2){
+      var vg=ctx.createLinearGradient(vs<0?0:W,0,vs<0?W*0.35:W*0.65,0);
+      vg.addColorStop(0,"rgba(255,255,255,"+va.toFixed(3)+")");vg.addColorStop(1,"rgba(255,255,255,0)");
+      ctx.fillStyle=vg;
+      ctx.fillRect(vs<0?0:W*0.65,H*0.30,W*0.35,H*0.44);
+    }
+  }
+  /* speed lines */
+  if(spdK>0.6&&!S.paused&&!S.crashed){
+    ctx.strokeStyle="rgba(255,255,255,"+(0.08+0.14*(spdK-0.6)).toFixed(3)+")";ctx.lineWidth=2;
+    for(var sl=0;sl<16;sl++){
+      var ang=(sl/16)*Math.PI*2+S.fxT*0.3;
+      var r0=Math.min(W,H)*0.42, r1=r0+40+80*(spdK-0.6);
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(ang)*r0,H*0.52+Math.sin(ang)*r0);
+      ctx.lineTo(cx+Math.cos(ang)*r1,H*0.52+Math.sin(ang)*r1);
+      ctx.stroke();
+    }
+  }
   /* nose reticle */
   ctx.strokeStyle="#ffdf5a";ctx.lineWidth=2;
   ctx.beginPath();ctx.arc(cx,H*0.52,16,0,7);ctx.stroke();
@@ -283,6 +441,6 @@ FlightSim.prototype.render=function(){
   /* paused / crashed overlays */
   if(S.paused){ctx.fillStyle="rgba(0,0,0,.55)";ctx.fillRect(0,0,W,H);
     ctx.fillStyle="#fff";ctx.font="bold 40px Arial";ctx.textAlign="center";ctx.fillText("PAUSED",cx,H/2);ctx.textAlign="left";}
-};
+}
 window.FlightSim=FlightSim;
 })();
