@@ -40,7 +40,7 @@ FlightSim.prototype.reset=function(){
 };
 FlightSim.prototype.ev=function(n,d){try{this.onEvent(n,d||{});}catch(e){}};
 FlightSim.prototype.button=function(n){ /* buttons 1-11 */
-  var S=this;if(S.paused&&n!==10&&n!==11)return;
+  var S=this;if(S.paused&&n!==10&&n!==11&&n!==7)return; /* 7 = map is view-only, safe while paused */
   switch(n){
     case 1:S.throttle=Math.min(1,S.throttle+0.15);break;
     case 2:S.throttle=Math.max(0,S.throttle-0.15);break;
