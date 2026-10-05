@@ -49,6 +49,9 @@ button.grn,.btn.grn{background:var(--grn);color:#04140a}
 button.warn,.btn.warn{background:var(--red);color:#fff}
 button:disabled{opacity:.45;cursor:not-allowed}
 .btn{text-decoration:none;display:inline-block}
+/* graphics tier + view controls (sim.html) */
+#viewrow select{width:auto;max-width:none;display:inline-block;margin:0 4px;padding:8px 10px}
+button.viewbtn.on{background:var(--cy);color:#04121a}
 /* forms */
 input[type=text],select{width:100%;max-width:420px;background:#0a1830;color:var(--txt);
   border:1px solid var(--line);border-radius:8px;padding:11px 14px;font-size:1em;margin:6px 0;font-family:inherit}
