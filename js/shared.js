@@ -25,7 +25,9 @@ var SITES=[
 ["signature-3d-print/","27 The Signature 3D Print Mega Mall"],
 ["signature-earth/","28 Signature Earth"],
 ["signature-game-store/","30 The Signature Game Store"],
-["signature-website-creator/","31 The Signature Website Creator"]];
+["signature-website-creator/","31 The Signature Website Creator"],
+["signature-antivirus/","32 The Signature Antivirus"],
+["signature-os-updater/","33 The Signature OS Updater"]];
 window.SFNAV=function(){
   var h='<div class="jahnet"><span class="t">THE JAH NETWORK</span><br>';
   for(var i=0;i<SITES.length;i++) h+='<a href="'+BASE+SITES[i][0]+'">'+SITES[i][1]+'</a>';
