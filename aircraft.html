@@ -57,5 +57,99 @@ fetch("data/aircraft.json").then(function(r){return r.json();}).then(function(d)
   render(FLEET);
 }).catch(function(){document.getElementById("fleet").innerHTML="<p>Could not load the fleet.</p>";});
 </script>
+
+<style>
+/* ============ FIRST-visit WELCOME overlay (2026-10-04 standard: centered modal, no scroll, no spotlight) ============ */
+#jahWelcome,#jahGuide,#jahGuideBtn{--amber:#f5a623;--amber2:#f5a6232}
+#jahGuideBtn{position:fixed;top:14px;right:14px;z-index:99900;min-width:48px;min-height:48px;border-radius:24px;border:1px solid var(--amber,#f5a623);background:var(--panel,#161d27);color:var(--amber2,#ffcf6e);font-weight:700;font-size:18px;padding:10px 16px;cursor:pointer}
+#jahGuideBtn:hover{background:var(--amber,#f5a623);color:#0a0e14}
+#jahWelcome{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.75)}
+#jahWelcome.show{display:flex}
+#jahWelcomeCard{background:var(--panel,#161d27);border:2px solid var(--amber,#f5a623);border-radius:14px;padding:22px 20px;max-width:540px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.6);color:var(--txt,#e8edf4)}
+#jahWelcomeCard h2{margin:0 0 4px;color:var(--amber2,#ffcf6e);font-size:20px}
+#jahWelcomeCard .wsub{margin:4px 0 0;color:var(--dim,#9aa7ba);font-size:14px}
+#jahWelcomeCard ol{margin:10px 0 0;padding-left:22px;font-size:14px;line-height:1.55}
+#jahWelcomeCard ol li{margin:8px 0}
+#jahWelcomeCard ol li b{color:var(--amber2,#ffcf6e)}
+#jahWelcomeCard .wbtnrow{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+#jahGuide .btn,#jahWelcome .btn{min-height:48px;min-width:48px;font-size:15px;padding:12px 22px;border-radius:10px;border:1px solid var(--amber,#f5a623);background:transparent;color:var(--amber2,#ffcf6e);cursor:pointer;font-family:inherit}
+#jahWelcomeOk{font-weight:700;background:var(--amber,#f5a623)!important;color:#0a0e14!important;border:none!important}
+#jahGuide{position:fixed;inset:0;z-index:99900;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.7)}
+#jahGuide.show{display:flex}
+#jahGuideCard{background:var(--panel,#161d27);border:1px solid var(--amber,#f5a623);border-radius:14px;max-width:680px;width:100%;max-height:86vh;overflow:auto;padding:20px 22px;color:var(--txt,#e8edf4)}
+#jahGuideCard h2{margin-top:0;color:var(--amber2,#ffcf6e)}
+#jahGuideCard .gfeat{margin:0 0 14px;padding:10px 12px;background:#10151d;border:1px solid var(--line,#2a3444);border-radius:10px}
+#jahGuideCard .gfeat b{color:var(--amber2,#ffcf6e)}
+#jahGuideCard .gfeat p{margin:4px 0 0;font-size:14px;line-height:1.5;color:var(--txt,#e8edf4)}
+#jahGuideCard .gfeat p b{color:var(--amber2,#ffcf6e)}
+#jahGuideCard .gfeat ul{margin:4px 0;padding-left:20px}
+#jahGuideCloseRow{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+</style>
+<button id="jahGuideBtn" aria-label="Open the site guide" title="How to use this site — every feature, in plain language">?</button>
+<!-- first-visit WELCOME overlay (2026-10-04 standard: centered modal, no scroll, no spotlight) -->
+<div id="jahWelcome" aria-hidden="true">
+  <div id="jahWelcomeCard" role="dialog" aria-modal="true" aria-label="Welcome to The Signature Flight School">
+    <h2>Welcome to The Signature Flight School</h2>
+    <p class="wsub">A real flight simulator &mdash; pick any of 12 aircraft, train with lessons, and log real pilot hours. Here&rsquo;s how to use it:</p>
+    <ol>
+      <li><b>Pick your aircraft.</b> 12 planes and jets on the Aircraft page &mdash; each one flies like itself.</li>
+      <li><b>Learn the lessons.</b> Step-by-step training with Captain Siggy, your AI instructor &mdash; from first takeoff to landing.</li>
+      <li><b>Fly the sim.</b> Stick plus buttons 1&ndash;11, throttle and flaps &mdash; real flight physics, map view, and jet-game-grade visual effects.</li>
+      <li><b>Watch, then fly.</b> AI demo flights show any maneuver first &mdash; end your flight to log hours on your device.</li>
+    </ol>
+    <div class="wbtnrow">
+      <button class="btn" id="jahWelcomeOk" type="button">OK &mdash; Got it &#10003;</button>
+      <button class="btn" id="jahWelcomeFull" type="button">Full how-to guide</button>
+    </div>
+  </div>
+</div>
+<div id="jahGuide" aria-hidden="true">
+  <div id="jahGuideCard" role="dialog" aria-modal="true" aria-label="How to use The Signature Flight School">
+    <div id="jahGuideCloseRow">
+      <h2 style="margin:0">How to use this site</h2>
+      <button class="btn" id="jahGuideClose" type="button">&#10005; Close</button>
+    </div>
+    <div class="gfeat"><b>&#9992;&#65039; Aircraft</b><p><b>What:</b> the Aircraft page. <b>Does:</b> 12 planes and jets, each with its own flight model and look. <b>How:</b> Open Aircraft, pick one, press Fly.</p></div>
+    <div class="gfeat"><b>&#127891; Lessons</b><p><b>What:</b> the training track. <b>Does:</b> Step-by-step lessons from takeoff to landing with Captain Siggy the AI instructor. <b>How:</b> Start Lesson 1 and follow the calls.</p></div>
+    <div class="gfeat"><b>&#128377; Sim controls</b><p><b>What:</b> the cockpit controls. <b>Does:</b> Stick for pitch and roll, buttons 1&ndash;11 for views and systems (7 = map, 10 = pause), throttle for power &mdash; honest flight physics. <b>How:</b> Fly in the sim; the button bar labels every control.</p></div>
+    <div class="gfeat"><b>&#129516; AI demo flights</b><p><b>What:</b> the watch-first mode. <b>Does:</b> The AI flies any maneuver or path so you can study it, then you take the controls. <b>How:</b> Press &ldquo;Watch the AI fly it&rdquo; in the sim.</p></div>
+    <div class="gfeat"><b>&#128506; Flight Paths</b><p><b>What:</b> the Paths page. <b>Does:</b> Watch the AI fly any flight path, then fly it yourself. <b>How:</b> Open Flight Paths, pick a path.</p></div>
+    <div class="gfeat"><b>&#9201;&#65039; Pilot hours</b><p><b>What:</b> your logbook. <b>Does:</b> Flight time is logged on your device when you end a flight. <b>How:</b> Press &ldquo;End flight &amp; log hours&rdquo;.</p></div>
+    <div class="gfeat"><b>&#127912; Graphics tiers</b><p><b>What:</b> the visuals dial. <b>Does:</b> 16-BIT up to BEYOND &mdash; sky, clouds, afterburner, vapor trails scale with the era you pick. <b>How:</b> The graphics control in the sim; lower tiers also keep older phones smooth.</p></div>
+    <div class="btnrow" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+      <button class="btn" id="jahGuideTour" type="button">&#9654; Show the welcome guide</button>
+      <button class="btn" id="jahGuideClose2" type="button">&#10005; Close guide</button>
+    </div>
+  </div>
+</div>
+<script>(function(){try{
+/* ---------- first-visit WELCOME overlay (2026-10-04 standard): centered modal.
+   NO auto-scroll, NO spotlight, NO section jumps — the page stays put, the overlay teaches. ---------- */
+var FLAG="jah-tour-seen-flightschool";
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+var w=document.getElementById("jahWelcome"),
+    guide=document.getElementById("jahGuide"),
+    guideCard=document.getElementById("jahGuideCard"),
+    guideBtn=document.getElementById("jahGuideBtn");
+function openWelcome(){if(!w)return;w.classList.add("show");w.setAttribute("aria-hidden","false");
+  try{document.getElementById("jahWelcomeOk").focus({preventScroll:true})}catch(e){}}
+function closeWelcome(){if(!w)return;w.classList.remove("show");w.setAttribute("aria-hidden","true");ls(FLAG,"1")}
+document.getElementById("jahWelcomeOk").onclick=closeWelcome;
+document.getElementById("jahWelcomeFull").onclick=function(){closeWelcome();openGuide()};
+w.addEventListener("click",function(e){if(e.target===w)closeWelcome()});
+document.addEventListener("keydown",function(e){
+  if(w.classList.contains("show")&&e.key==="Escape"){closeWelcome();e.preventDefault()}});
+function openGuide(){if(!guide)return;guide.classList.add("show");guide.setAttribute("aria-hidden","false");
+  try{guideCard.scrollTop=0;document.getElementById("jahGuideClose").focus({preventScroll:true})}catch(e){}}
+function closeGuide(){if(!guide)return;guide.classList.remove("show");guide.setAttribute("aria-hidden","true");
+  try{guideBtn.focus({preventScroll:true})}catch(e){}}
+guideBtn.onclick=openWelcome;
+document.getElementById("jahGuideClose").onclick=closeGuide;
+document.getElementById("jahGuideClose2").onclick=closeGuide;
+document.getElementById("jahGuideTour").onclick=function(){closeGuide();openWelcome()};
+guide.addEventListener("click",function(e){if(e.target===guide)closeGuide()});
+var __qs="",__hash="";try{__qs=location.search;__hash=location.hash}catch(e){}
+if(!ls(FLAG)&&__qs.indexOf("craft=")<0){setTimeout(openWelcome,900)}
+}catch(e){}})();</script>
 </body>
 </html>
