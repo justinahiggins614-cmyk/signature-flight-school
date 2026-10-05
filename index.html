@@ -32,7 +32,7 @@
   <h2>🎯 Our Mission</h2>
   <p>Every kid — and every grown-up kid — should feel what it's like to fly. The Signature Flight School teaches real flying ideas (lift, turns, landings) in plain words, with an AI pal who never gets tired of your questions and a simulator that lets you crash safely a hundred times before your first perfect landing.</p>
   <div class="grid">
-    <div class="card"><h3>✈️ 12 Aircraft</h3><p class="meta">From the gentle Skyhopper trainer to the Starhopper rocket plane — each with a skill level, so you always know what's next.</p><a class="btn" href="aircraft.html">Browse Aircraft</a></div>
+    <div class="card"><h3 id="fleetcard">✈️ 12 Aircraft</h3><p class="meta">From the gentle Skyhopper trainer to the Starhopper rocket plane — each with a skill level, so you always know what's next.</p><a class="btn" href="aircraft.html">Browse Aircraft</a></div>
     <div class="card"><h3>🤖 Captain Siggy</h3><p class="meta">Your AI pal instructor. Step-by-step lessons, real-time coaching while you fly, and a solo mode when you're ready.</p><a class="btn" href="sim.html">Meet Your Instructor</a></div>
     <div class="card"><h3>🗺️ Flight Paths</h3><p class="meta">A growing catalog of simulated flight paths over Earth — watch the AI fly any of them, then fly it yourself.</p><a class="btn" href="paths.html">Explore Paths</a></div>
   </div>
@@ -91,6 +91,11 @@ function renderLog(){
    '<button class="ghost" onclick="SFRead(\'Pilot '+esc(cur).replace(/'/g,"")+'. '+p.hours.toFixed(1)+' simulator hours. '+p.flights+' flights. '+(p.lessons||[]).length+' of 5 lessons done.\')">🔊 Read my logbook</button>';
 }
 renderPilot();renderLog();
+/* live fleet count from the real aircraft data (stamped 12 stays as fallback) */
+fetch("data/aircraft.json").then(function(r){if(!r.ok)throw new Error("http "+r.status);return r.json();}).then(function(d){
+  var n=Array.isArray(d)?d.length:0,el=document.getElementById("fleetcard");
+  if(n&&el)el.textContent="✈️ "+n+" Aircraft";
+}).catch(function(){});
 </script>
 
 <style>
