@@ -65,30 +65,31 @@ if(!window.__JAHREAD){
   };
   window.__JAHREAD=R;
 }
-/* ---------- tiered read-aloud: ResponsiveVoice -> Google TTS -> speechSynthesis ---------- */
+/* ---------- tiered read-aloud: Audio-only (ResponsiveVoice -> Google TTS x2).
+   No speechSynthesis tier: it is silent/missing in Facebook WebView + Android
+   in-app browsers, so the page must work Audio-only. ---------- */
 var chunks=[],ci=0,speaking=false;
-function googleTTSUrl(t){return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q="+encodeURIComponent(t);}
+var TTS_HOSTS=["translate.google.com","translate.googleapis.com"];
+function googleTTSUrl(t,host){return "https://"+host+"/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q="+encodeURIComponent(t);}
 function playChunk(){
   if(ci>=chunks.length){speaking=false;return;}
   var t=chunks[ci];
   var done=function(){ci++;setTimeout(playChunk,150);};
   try{
-    if(window.responsiveVoice){responsiveVoice.speak(t,"UK English Female",{onend:done,onerror:step2});return;}
-    step2();
-  }catch(e){step2();}
-  function step2(){
+    if(window.responsiveVoice){responsiveVoice.speak(t,"UK English Female",{onend:done,onerror:function(){playAudio(0);}});return;}
+    playAudio(0);
+  }catch(e){playAudio(0);}
+  function playAudio(hi){
+    if(hi>=TTS_HOSTS.length){
+      try{if(window.jahToast)jahToast("Voice not reachable — check connection or try Chrome.");}catch(e){}
+      done();return;
+    }
     try{
       var a=new Audio(); window.__JAHREAD.cur=a;
-      a.src=googleTTSUrl(t); a.onended=done;
-      a.onerror=function(){step3();};
-      var p=a.play(); if(p&&p.catch)p.catch(function(){step3();});
-    }catch(e){step3();}
-  }
-  function step3(){
-    try{
-      var u=new SpeechSynthesisUtterance(t); u.lang="en-US";
-      u.onend=done; u.onerror=done; speechSynthesis.speak(u);
-    }catch(e){done();}
+      a.src=googleTTSUrl(t,TTS_HOSTS[hi]); a.onended=done;
+      a.onerror=function(){playAudio(hi+1);};
+      var p=a.play(); if(p&&p.catch)p.catch(function(){playAudio(hi+1);});
+    }catch(e){playAudio(hi+1);}
   }
 }
 window.SFRead=function(text){
@@ -113,7 +114,7 @@ function savePilots(p){try{JAHPS.set(PKEY,JSON.stringify(p));}catch(e){}}
 window.SFpilots={
   all:function(){return loadPilots();},
   current:function(){var p=loadPilots();var n=null;try{n=JAHPS.get(CKEY);}catch(e){}
-    if(n&&p[n])return n;var ks=Object.keys(p);return ks.length?ks[0]:null;},
+    return (n&&p[n])?n:null;},
   get:function(name){var p=loadPilots();return p[name]||null;},
   signin:function(name){
     name=String(name).trim().slice(0,40);if(!name)return null;
